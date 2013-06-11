@@ -35,7 +35,24 @@ Some text with `some code` inside
     line 2 of code
     line 3 of code
 
-[Markdown](http://en.wikipedia.com/wiki/Markdown)
+This is [an example](http://example.com/ "Title") inline link.
+[This link](http://example.net/) has no title attribute.
+
+See my [About][about] for more details.
+
+Powered By ![Alt text1](http://www.pdfsharp.net/wiki/Images/PoweredBy.png)
+
+Powered By ![Alt text2][id]
+
+This is a table:
+
+Heading1|Heading2|Heading3
+row1.1|row1.2|row1.3|
+*row2.1*|__row2.2__|***row2.3***|
+
+
+[id]: http://www.pdfsharp.net/wiki/Images/PoweredBy.png "some title"
+[about]: /about/ "About title"
 """
 
 let parsed = Markdown.Parse(markdownDoc)
