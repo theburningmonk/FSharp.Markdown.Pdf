@@ -30,12 +30,6 @@ module MarkdownStyleNames =
     [<Literal>] 
     let Hyperlink     = "MdHyperlink"
     [<Literal>] 
-    let Emphasis      = "MdEmphasis"
-    [<Literal>] 
-    let Strong        = "MdStrong"
-    [<Literal>] 
-    let VeryStrong    = "MdVeryStrong"
-    [<Literal>] 
     let Quoted        = "MdQuoted"
     [<Literal>] 
     let Code          = "MdCode"
@@ -44,6 +38,8 @@ type Context =
     { 
         Document        : Document
         StyleOverride   : string option
+        BoldOverride    : bool option
+        ItalicOverride  : bool option
     }
 
 /// Sets the default styles if user-provided overrides do not exist
@@ -68,14 +64,9 @@ let setDefaultStyles (document : Document) =
                   (fun style -> style.Font.Size <- Unit.FromPoint 10.0)
 
     setIfNotExist MarkdownStyleNames.Hyperlink StyleNames.Hyperlink
-                  (fun style -> style.Font.Color <- Colors.Blue)
-
-    setIfNotExist MarkdownStyleNames.Emphasis MarkdownStyleNames.Normal
-                  (fun style -> style.Font.Italic <- true)
-    setIfNotExist MarkdownStyleNames.Strong MarkdownStyleNames.Normal
-                  (fun style -> style.Font.Bold <- true)
-    setIfNotExist MarkdownStyleNames.VeryStrong MarkdownStyleNames.Strong
-                  (fun style -> style.Font.Italic <- true)
+                  (fun style -> style.Font.Bold      <- true
+                                style.Font.Color     <- Colors.Blue
+                                style.Font.Underline <- Underline.Single)
 
     setIfNotExist MarkdownStyleNames.Quoted MarkdownStyleNames.Normal
                   (fun style -> style.ParagraphFormat.Borders.DistanceFromLeft  <- Unit.FromPoint 17.0
@@ -94,38 +85,40 @@ let inline updateElements f x =
     let elements = (^a : (member Elements : ParagraphElements) x)
     f elements
 
-let inline addText str          = updateElements (fun elems -> elems.AddText str)
 let inline addLineBreak ()      = updateElements (fun elems -> elems.AddLineBreak())
 let inline addHyperLink str     = updateElements (fun elems -> elems.AddHyperlink(str, HyperlinkType.Web))
 let inline addImage link        = updateElements (fun elems -> elems.AddImage(link))
-let inline addFormattedTextWithFont (str : string) (font : Font) = 
+
+let inline addFormattedText { BoldOverride = bold; ItalicOverride = italic } (str : string) = 
+    updateElements (fun elems -> 
+        let fmtTxt= elems.AddFormattedText str
+        match bold with | Some true -> fmtTxt.Font.Bold <- true | _ -> ()
+        match italic with | Some true -> fmtTxt.Font.Italic <- true | _ -> ())
+let inline addFormattedTextWithFont (font : Font) (str : string) = 
     updateElements (fun elems -> elems.AddFormattedText(str, font))
-let inline addFormattedTextWithStyle (str : string) (style : string) = 
+let inline addFormattedTextWithStyle (style : string) (str : string)  = 
     updateElements (fun elems -> elems.AddFormattedText(str, style))
-
-let emphasis = function | MarkdownStyleNames.Emphasis, MarkdownStyleNames.Strong 
-                        | MarkdownStyleNames.Strong, MarkdownStyleNames.Emphasis 
-                                      -> MarkdownStyleNames.VeryStrong
-                        | newStyle, _ -> newStyle
-
+    
 let downloadImg (link : string) =
     let localPath = Path.GetTempFileName() + Path.GetExtension link
     use client = new WebClient()
     client.DownloadFile(link, localPath)
     localPath
 
-let rec inline formatSpan (x : Paragraph) = function
-    | Literal(str)    -> x |> addText str     |> ignore
+let rec inline formatSpan (cxt : Context) (x : Paragraph) = function
+    | Literal(str)    -> x |> addFormattedText cxt str |> ignore
     | HardLineBreak   -> x |> addLineBreak () |> ignore
-    | Strong(spans)   -> x.Style <- emphasis (MarkdownStyleNames.Strong, x.Style)
-                         formatSpans x spans
-    | Emphasis(spans) -> x.Style <- emphasis (MarkdownStyleNames.Emphasis, x.Style)
-                         formatSpans x spans
-    | InlineCode(str) -> x |> addFormattedTextWithStyle str MarkdownStyleNames.Code |> ignore // TODO : this doesn't work
+    | Strong(spans)   -> let cxt = { cxt with BoldOverride = Some true }
+                         formatSpans cxt x spans
+    | Emphasis(spans) -> let cxt = { cxt with ItalicOverride = Some true }
+                         formatSpans cxt x spans
+    | InlineCode(str) -> x 
+                         |> addFormattedTextWithStyle MarkdownStyleNames.Code str 
+                         |> ignore // TODO : this doesn't work
     | DirectLink([ Literal str ], (link, _))
         -> x 
            |> addHyperLink link
-           |> addFormattedTextWithStyle str MarkdownStyleNames.Hyperlink |> ignore
+           |> addFormattedTextWithStyle MarkdownStyleNames.Hyperlink str |> ignore
     | IndirectLink([ Literal str ], original, _)
         -> () // TODO
     | DirectImage(altText, (link, _))
@@ -134,7 +127,7 @@ let rec inline formatSpan (x : Paragraph) = function
     | IndirectImage(altText, link, title)
         -> () // TODO
 
-and formatSpans x = List.iter (formatSpan x)
+and formatSpans cxt x = List.iter (formatSpan cxt x)
 
 let rec formatParagraph (cxt : Context) (mdParagraph : MarkdownParagraph) =
     let pdfParagraph = cxt.Document.LastSection.AddParagraph()
@@ -144,9 +137,9 @@ let rec formatParagraph (cxt : Context) (mdParagraph : MarkdownParagraph) =
     
     match mdParagraph with
     | Heading(n, spans)      -> pdfParagraph.Style <- "MdHeading" + string n
-                                formatSpans pdfParagraph spans
+                                formatSpans cxt pdfParagraph spans
     | Paragraph(spans)       
-    | Span(spans)            -> formatSpans pdfParagraph spans
+    | Span(spans)            -> formatSpans cxt pdfParagraph spans
     | CodeBlock(str)         -> pdfParagraph.Style <- MarkdownStyleNames.Code
                                 pdfParagraph.AddFormattedText(str) |> ignore
     | HtmlBlock _            -> raise <| NotSupportedException()
@@ -166,7 +159,7 @@ let formatMarkdown (document : Document) (paragraphs : MarkdownParagraphs) =
     setDefaultStyles document
     document.AddSection() |> ignore
 
-    let cxt = { Document = document; StyleOverride = None }
+    let cxt = { Document = document; StyleOverride = None; BoldOverride = None; ItalicOverride = None }
     
     formatParagraphs cxt paragraphs
 
