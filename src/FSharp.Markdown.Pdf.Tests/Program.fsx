@@ -10,6 +10,8 @@ open System.Diagnostics
 open FSharp.Markdown
 open FSharp.Markdown.Pdf
 
+open MigraDoc.DocumentObjectModel
+
 let markdownDoc = """
 # This is header 1
 
@@ -44,19 +46,21 @@ Powered By ![Alt text1](http://www.pdfsharp.net/wiki/Images/PoweredBy.png)
 
 Powered By ![Alt text2][id]
 
+---
+
 This is a table:
 
 Heading1|Heading2|Heading3
-row1.1|row1.2|row1.3|
-*row2.1*|__row2.2__|***row2.3***|
-
+--------|--------|-------
+row11|row12|row13
+*row2.1*|__row2.2__|***row2.3***
 
 [id]: http://www.pdfsharp.net/wiki/Images/PoweredBy.png "some title"
 [about]: /about/ "About title"
 """
 
 let parsed = Markdown.Parse(markdownDoc)
-let pdfDoc = formatMarkdown parsed.Paragraphs
+let pdfDoc = formatMarkdown (new Document()) parsed.Paragraphs
 
 let filename = @"C:\temp\markdown.pdf"
 pdfDoc.Save(filename)

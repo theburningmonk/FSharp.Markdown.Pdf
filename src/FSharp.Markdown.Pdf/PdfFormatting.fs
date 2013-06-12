@@ -10,24 +10,82 @@ open PdfSharp.Pdf
 open MigraDoc.DocumentObjectModel
 open MigraDoc.Rendering
 
-let defineStyles (document : Document) =
-    document.Styles.[StyleNames.Heading1].Font.Size     <- Unit.FromPoint 32.0
-    document.Styles.[StyleNames.Heading2].Font.Size     <- Unit.FromPoint 28.0
-    document.Styles.[StyleNames.Heading3].Font.Size     <- Unit.FromPoint 24.0
-    document.Styles.[StyleNames.Heading4].Font.Size     <- Unit.FromPoint 20.0
-    document.Styles.[StyleNames.Heading5].Font.Size     <- Unit.FromPoint 16.0
-    document.Styles.[StyleNames.Heading6].Font.Size     <- Unit.FromPoint 12.0
-    document.Styles.[StyleNames.Normal].Font.Size       <- Unit.FromPoint 10.0
-    document.Styles.[StyleNames.Hyperlink].Font.Color   <- Colors.Blue
-    document.Styles.AddStyle("Emphasis", StyleNames.Normal).Font.Italic <- true
-    document.Styles.AddStyle("Strong", StyleNames.Normal).Font.Bold     <- true    
-    document.Styles.AddStyle("VeryStrong", "Strong").Font.Italic        <- true
-    
-    let codeStyle = document.Styles.AddStyle("Code", StyleNames.Normal)
-    codeStyle.ParagraphFormat.Shading.Visible   <- true
-    codeStyle.ParagraphFormat.Shading.Color     <- Colors.LightGray
+/// Constant style names so that the user has the option to provide his own styling
+/// for a given PDF document
+module MarkdownStyleNames = 
+    [<Literal>] 
+    let Normal        = "MdNormal"
+    [<Literal>] 
+    let Heading1      = "MdHeading1"
+    [<Literal>] 
+    let Heading2      = "MdHeading2"
+    [<Literal>] 
+    let Heading3      = "MdHeading3"
+    [<Literal>] 
+    let Heading4      = "MdHeading4"
+    [<Literal>] 
+    let Heading5      = "MdHeading5"
+    [<Literal>] 
+    let Heading6      = "MdHeading6"
+    [<Literal>] 
+    let Hyperlink     = "MdHyperlink"
+    [<Literal>] 
+    let Emphasis      = "MdEmphasis"
+    [<Literal>] 
+    let Strong        = "MdStrong"
+    [<Literal>] 
+    let VeryStrong    = "MdVeryStrong"
+    [<Literal>] 
+    let Quoted        = "MdQuoted"
+    [<Literal>] 
+    let Code          = "MdCode"
 
-    document
+type Context = 
+    { 
+        Document        : Document
+        StyleOverride   : string option
+    }
+
+/// Sets the default styles if user-provided overrides do not exist
+let setDefaultStyles (document : Document) =
+    let setIfNotExist styleName baseStyleName update =
+        if not <| document.Styles.HasValue styleName then
+            document.Styles.AddStyle(styleName, baseStyleName) |> update
+
+    setIfNotExist MarkdownStyleNames.Heading1 StyleNames.Heading1 
+                  (fun style -> style.Font.Size <- Unit.FromPoint 32.0)
+    setIfNotExist MarkdownStyleNames.Heading2 StyleNames.Heading2
+                  (fun style -> style.Font.Size <- Unit.FromPoint 28.0)
+    setIfNotExist MarkdownStyleNames.Heading3 StyleNames.Heading3
+                  (fun style -> style.Font.Size <- Unit.FromPoint 24.0)
+    setIfNotExist MarkdownStyleNames.Heading4 StyleNames.Heading4
+                  (fun style -> style.Font.Size <- Unit.FromPoint 20.0)
+    setIfNotExist MarkdownStyleNames.Heading5 StyleNames.Heading5
+                  (fun style -> style.Font.Size <- Unit.FromPoint 16.0)
+    setIfNotExist MarkdownStyleNames.Heading6 StyleNames.Heading6
+                  (fun style -> style.Font.Size <- Unit.FromPoint 12.0)
+    setIfNotExist MarkdownStyleNames.Normal StyleNames.Normal
+                  (fun style -> style.Font.Size <- Unit.FromPoint 10.0)
+
+    setIfNotExist MarkdownStyleNames.Hyperlink StyleNames.Hyperlink
+                  (fun style -> style.Font.Color <- Colors.Blue)
+
+    setIfNotExist MarkdownStyleNames.Emphasis MarkdownStyleNames.Normal
+                  (fun style -> style.Font.Italic <- true)
+    setIfNotExist MarkdownStyleNames.Strong MarkdownStyleNames.Normal
+                  (fun style -> style.Font.Bold <- true)
+    setIfNotExist MarkdownStyleNames.VeryStrong MarkdownStyleNames.Strong
+                  (fun style -> style.Font.Italic <- true)
+
+    setIfNotExist MarkdownStyleNames.Quoted MarkdownStyleNames.Normal
+                  (fun style -> style.ParagraphFormat.LeftIndent <- Unit.FromPoint 4.0)
+    setIfNotExist MarkdownStyleNames.Code MarkdownStyleNames.Normal
+                  (fun style -> style.ParagraphFormat.Borders.Distance  <- Unit.FromPoint 5.0
+                                style.ParagraphFormat.LeftIndent        <- Unit.FromPoint 5.0
+                                style.ParagraphFormat.Shading.Visible   <- true
+                                style.ParagraphFormat.Shading.Color     <- Colors.LightGray
+                                style.ParagraphFormat.Borders.Width     <- Unit.FromPoint 1.0
+                                style.ParagraphFormat.Borders.Color     <- Colors.Gray)
 
 let inline updateElements f x = 
     let elements = (^a : (member Elements : ParagraphElements) x)
@@ -42,7 +100,9 @@ let inline addFormattedTextWithFont (str : string) (font : Font) =
 let inline addFormattedTextWithStyle (str : string) (style : string) = 
     updateElements (fun elems -> elems.AddFormattedText(str, style))
 
-let emphasis = function | "Emphasis", "Strong" | "Strong", "Emphasis" -> "VeryStrong" 
+let emphasis = function | MarkdownStyleNames.Emphasis, MarkdownStyleNames.Strong 
+                        | MarkdownStyleNames.Strong, MarkdownStyleNames.Emphasis 
+                                      -> MarkdownStyleNames.VeryStrong
                         | newStyle, _ -> newStyle
 
 let downloadImg (link : string) =
@@ -54,15 +114,15 @@ let downloadImg (link : string) =
 let rec inline formatSpan (x : Paragraph) = function
     | Literal(str)    -> x |> addText str     |> ignore
     | HardLineBreak   -> x |> addLineBreak () |> ignore
-    | Strong(spans)   -> x.Style <- emphasis ("Strong", x.Style)
+    | Strong(spans)   -> x.Style <- emphasis (MarkdownStyleNames.Strong, x.Style)
                          formatSpans x spans
-    | Emphasis(spans) -> x.Style <- emphasis ("Emphasis", x.Style)
+    | Emphasis(spans) -> x.Style <- emphasis (MarkdownStyleNames.Emphasis, x.Style)
                          formatSpans x spans
-    | InlineCode(str) -> x |> addFormattedTextWithStyle str "Code" |> ignore // TODO : this doesn't work
+    | InlineCode(str) -> x |> addFormattedTextWithStyle str MarkdownStyleNames.Code |> ignore // TODO : this doesn't work
     | DirectLink([ Literal str ], (link, _))
-        -> let hyperlink = x |> addHyperLink link
-           let text = hyperlink |> addText str
-           hyperlink.Font.Color <- Colors.Blue
+        -> x 
+           |> addHyperLink link
+           |> addFormattedTextWithStyle str MarkdownStyleNames.Hyperlink |> ignore
     | IndirectLink([ Literal str ], original, _)
         -> () // TODO
     | DirectImage(altText, (link, _))
@@ -73,34 +133,38 @@ let rec inline formatSpan (x : Paragraph) = function
 
 and formatSpans x = List.iter (formatSpan x)
 
-let rec formatParagraph (document : Document) (paragraph : MarkdownParagraph) =
-    let pdfParagraph = document.LastSection.AddParagraph()
+let rec formatParagraph (cxt : Context) (mdParagraph : MarkdownParagraph) =
+    let pdfParagraph = cxt.Document.LastSection.AddParagraph()
     
-    match paragraph with
-    | Heading(n, spans) ->
-        pdfParagraph.Style <- "Heading" + string n
-        formatSpans pdfParagraph spans
+    match mdParagraph with
+    | Heading(n, spans) -> pdfParagraph.Style <- "MdHeading" + string n
+                           formatSpans pdfParagraph spans
     | Paragraph(spans)
-    | Span(spans)       ->
-        formatSpans pdfParagraph spans
-    | CodeBlock(str)    ->
-        pdfParagraph.Style <- "Code"
-        pdfParagraph.AddFormattedText(str) |> ignore
+    | Span(spans)       -> formatSpans pdfParagraph spans
+    | CodeBlock(str)    -> pdfParagraph.Style <- MarkdownStyleNames.Code
+                           pdfParagraph.AddFormattedText(str) |> ignore
     | HtmlBlock _            -> raise <| NotSupportedException()
     | ListBlock _            -> () // TODO
-    | QuotedBlock paragraphs -> () // TODO
-    | HorizontalRule         -> () // TODO
-    | TableBlock _           -> () // TODO
+    | QuotedBlock paragraphs -> 
+        let cxt = { cxt with StyleOverride = Some MarkdownStyleNames.Quoted }
+        formatParagraphs cxt paragraphs
+    | HorizontalRule         ->
+        // not sure if it's the right choice, but let's interpret horizontal rule as a page break
+        cxt.Document.AddSection() |> ignore
+    | TableBlock(headers, alignments, rows)
+        -> () // TODO
 
-and formatParagraphs (document : Document) = List.iter (formatParagraph document)
+and formatParagraphs (cxt : Context) = List.iter (formatParagraph cxt)
 
-let formatMarkdown (paragraphs : MarkdownParagraphs) = 
-    let pdfDocument = new Document() |> defineStyles
-    pdfDocument.AddSection() |> ignore
+let formatMarkdown (document : Document) (paragraphs : MarkdownParagraphs) = 
+    setDefaultStyles document
+    document.AddSection() |> ignore
 
-    formatParagraphs pdfDocument paragraphs
+    let cxt = { Document = document; StyleOverride = None }
+    
+    formatParagraphs cxt paragraphs
 
     let renderer = PdfDocumentRenderer(false, PdfFontEmbedding.Always)
-    renderer.Document <- pdfDocument
+    renderer.Document <- document
     renderer.RenderDocument()
     renderer.PdfDocument
