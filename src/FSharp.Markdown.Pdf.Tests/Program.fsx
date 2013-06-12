@@ -55,10 +55,10 @@ Powered By ![Alt text2][id]
 
 This is a table:
 
-Heading1|Heading2|Heading3
---------|--------|-------
-row11|row12|row13
-*row2.1*|__row2.2__|***row2.3***
+Heading1|Heading2|Heading3|Heading4
+--------|:--------:|-------:|:-------
+row11|row12|row13|
+*row2.1*|__row2.2__|***row2.3***|[row2.4](http://example.net/)
 
 [id]: http://www.pdfsharp.net/wiki/Images/PoweredBy.png "some title"
 [about]: /about/ "About title"

@@ -8,6 +8,7 @@ open FSharp.Markdown
 
 open PdfSharp.Pdf
 open MigraDoc.DocumentObjectModel
+open MigraDoc.DocumentObjectModel.Tables
 open MigraDoc.Rendering
 
 /// Constant style names so that the user has the option to provide his own styling
@@ -33,6 +34,8 @@ module MarkdownStyleNames =
     let Quoted        = "MdQuoted"
     [<Literal>] 
     let Code          = "MdCode"
+    [<Literal>]
+    let Table         = "MdTable"
 
 type Context = 
     { 
@@ -81,6 +84,8 @@ let setDefaultStyles (document : Document) =
                                 style.ParagraphFormat.Borders.Width     <- Unit.FromPoint 1.0
                                 style.ParagraphFormat.Borders.Color     <- Colors.Gray)
 
+    setIfNotExist MarkdownStyleNames.Table MarkdownStyleNames.Normal (fun style -> ())
+
 let inline updateElements f x = 
     let elements = (^a : (member Elements : ParagraphElements) x)
     f elements
@@ -108,6 +113,7 @@ let downloadImg (link : string) =
 let rec inline formatSpan (cxt : Context) (x : Paragraph) = function
     | Literal(str)    -> x |> addFormattedText cxt str |> ignore
     | HardLineBreak   -> x |> addLineBreak () |> ignore
+
     | Strong(spans)   -> let cxt = { cxt with BoldOverride = Some true }
                          formatSpans cxt x spans
     | Emphasis(spans) -> let cxt = { cxt with ItalicOverride = Some true }
@@ -129,8 +135,8 @@ let rec inline formatSpan (cxt : Context) (x : Paragraph) = function
 
 and formatSpans cxt x = List.iter (formatSpan cxt x)
 
-let rec formatParagraph (cxt : Context) (mdParagraph : MarkdownParagraph) =
-    let pdfParagraph = cxt.Document.LastSection.AddParagraph()
+let rec formatParagraph (cxt : Context) (addParagraph : unit -> Paragraph) (mdParagraph : MarkdownParagraph) =
+    let pdfParagraph = addParagraph()
     match cxt.StyleOverride with
     | Some styleName -> pdfParagraph.Style <- styleName
     | _ -> ()
@@ -146,14 +152,39 @@ let rec formatParagraph (cxt : Context) (mdParagraph : MarkdownParagraph) =
     | ListBlock _            -> () // TODO
     | QuotedBlock paragraphs -> 
         let cxt = { cxt with StyleOverride = Some MarkdownStyleNames.Quoted }
-        formatParagraphs cxt paragraphs
+        formatParagraphs cxt addParagraph paragraphs
     | HorizontalRule         ->
         // not sure if it's the right choice, but let's interpret horizontal rule as a page break
-        cxt.Document.AddSection() |> ignore
+        cxt.Document.LastSection.AddPageBreak()
     | TableBlock(headers, alignments, rows)
-        -> () // TODO
+        -> let table = cxt.Document.LastSection.AddTable()
+           table.Style              <- MarkdownStyleNames.Table
+           table.Borders.Color      <- Colors.LightGray
+           table.Borders.Width      <- Unit.FromPoint 0.25
+           table.TopPadding         <- Unit.FromPoint 10.0
+           table.RightPadding       <- Unit.FromPoint 10.0
+           table.BottomPadding      <- Unit.FromPoint 10.0
+           table.LeftPadding        <- Unit.FromPoint 10.0
 
-and formatParagraphs (cxt : Context) = List.iter (formatParagraph cxt)
+           alignments 
+           |> List.map (fun alignment -> alignment, table.AddColumn())
+           |> List.iter (function | AlignRight, column   -> column.Format.Alignment <- ParagraphAlignment.Right
+                                  | AlignCenter, column  -> column.Format.Alignment <- ParagraphAlignment.Center
+                                  | AlignLeft, column    
+                                  | AlignDefault, column -> column.Format.Alignment <- ParagraphAlignment.Left)
+            
+           seq {
+              if headers.IsSome then yield headers.Value, { cxt with BoldOverride = Some true }
+              yield! rows |> Seq.map (fun row -> row, cxt)
+           } |> Seq.iter (fun (row, cxt) -> formatTableRow cxt table row)
+
+and formatParagraphs (cxt : Context) addParagraph = List.iter (formatParagraph cxt addParagraph)
+
+and formatTableRow (cxt : Context) (table : Table) (mdRow : MarkdownTableRow) = 
+    let row = table.AddRow()
+    mdRow |> List.iteri (fun idx paragraphs -> 
+        let cell = row.Cells.[idx]
+        formatParagraphs cxt cell.AddParagraph paragraphs)
 
 let formatMarkdown (document : Document) (paragraphs : MarkdownParagraphs) = 
     setDefaultStyles document
@@ -161,7 +192,7 @@ let formatMarkdown (document : Document) (paragraphs : MarkdownParagraphs) =
 
     let cxt = { Document = document; StyleOverride = None; BoldOverride = None; ItalicOverride = None }
     
-    formatParagraphs cxt paragraphs
+    formatParagraphs cxt document.LastSection.AddParagraph paragraphs
 
     let renderer = PdfDocumentRenderer(false, PdfFontEmbedding.Always)
     renderer.Document <- document
