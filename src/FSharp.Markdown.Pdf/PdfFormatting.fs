@@ -1,6 +1,7 @@
 ﻿module FSharp.Markdown.Pdf
 
 open System
+open System.Collections.Generic
 open System.Net
 open System.IO
 
@@ -10,6 +11,11 @@ open PdfSharp.Pdf
 open MigraDoc.DocumentObjectModel
 open MigraDoc.DocumentObjectModel.Tables
 open MigraDoc.Rendering
+
+type StyleName = string
+type LinkId    = string
+type Link      = string
+type Title     = string option
 
 /// Constant style names so that the user has the option to provide his own styling
 /// for a given PDF document
@@ -37,10 +43,12 @@ module MarkdownStyleNames =
     [<Literal>]
     let Table         = "MdTable"
 
+/// Context passed around while formatting the PDF document
 type Context = 
     { 
         Document        : Document
-        StyleOverride   : string option
+        Links           : IDictionary<LinkId, Link * Title>
+        StyleOverride   : StyleName option
         BoldOverride    : bool option
         ItalicOverride  : bool option
     }
@@ -86,6 +94,7 @@ let setDefaultStyles (document : Document) =
 
     setIfNotExist MarkdownStyleNames.Table MarkdownStyleNames.Normal (fun style -> ())
 
+/// Helper function for updating the ParagraphElements object part of Paragraph/Hyperlink, etc.
 let inline updateElements f x = 
     let elements = (^a : (member Elements : ParagraphElements) x)
     f elements
@@ -98,43 +107,54 @@ let inline addFormattedText { BoldOverride = bold; ItalicOverride = italic } (st
     updateElements (fun elems -> 
         let fmtTxt= elems.AddFormattedText str
         match bold with | Some true -> fmtTxt.Font.Bold <- true | _ -> ()
-        match italic with | Some true -> fmtTxt.Font.Italic <- true | _ -> ())
+        match italic with | Some true -> fmtTxt.Font.Italic <- true | _ -> ()
+        fmtTxt)
 let inline addFormattedTextWithFont (font : Font) (str : string) = 
     updateElements (fun elems -> elems.AddFormattedText(str, font))
-let inline addFormattedTextWithStyle (style : string) (str : string)  = 
-    updateElements (fun elems -> elems.AddFormattedText(str, style))
+let inline addFormattedTextWithStyle (styleName : StyleName) (str : string)  = 
+    updateElements (fun elems -> elems.AddFormattedText(str, styleName))
     
-let downloadImg (link : string) =
+/// Downloads the image to a local path
+let downloadImg (link : Link) =
     let localPath = Path.GetTempFileName() + Path.GetExtension link
     use client = new WebClient()
     client.DownloadFile(link, localPath)
     localPath
 
-let rec inline formatSpan (cxt : Context) (x : Paragraph) = function
-    | Literal(str)    -> x |> addFormattedText cxt str |> ignore
-    | HardLineBreak   -> x |> addLineBreak () |> ignore
+/// Lookup a specified key in a dictionary, possibly ignoring newlines or spaces in the key.
+let (|LookupKey|_|) (dict:IDictionary<_, _>) (key:string) = 
+  [ key; key.Replace("\r\n", ""); key.Replace("\r\n", " "); 
+    key.Replace("\n", ""); key.Replace("\n", " ") ]
+  |> Seq.tryPick (fun key -> match dict.TryGetValue(key) with | true, v -> Some v | _ -> None)
+
+/// Write MarkdownSpan value to a PDF document
+let rec inline formatSpan (cxt : Context) (paragraph : Paragraph) = function
+    | Literal(str)    -> paragraph |> addFormattedText cxt str |> ignore
+    | HardLineBreak   -> paragraph |> addLineBreak () |> ignore
 
     | Strong(spans)   -> let cxt = { cxt with BoldOverride = Some true }
-                         formatSpans cxt x spans
+                         formatSpans cxt paragraph spans
     | Emphasis(spans) -> let cxt = { cxt with ItalicOverride = Some true }
-                         formatSpans cxt x spans
-    | InlineCode(str) -> x 
+                         formatSpans cxt paragraph spans
+    | InlineCode(str) -> paragraph
                          |> addFormattedTextWithStyle MarkdownStyleNames.Code str 
                          |> ignore // TODO : this doesn't work
     | DirectLink([ Literal str ], (link, _))
-        -> x 
+        -> paragraph
            |> addHyperLink link
            |> addFormattedTextWithStyle MarkdownStyleNames.Hyperlink str |> ignore
     | IndirectLink([ Literal str ], original, _)
         -> () // TODO
     | DirectImage(altText, (link, _))
         -> let localFile = downloadImg link
-           x.AddImage(localFile) |> ignore
+           paragraph.AddImage(localFile) |> ignore
     | IndirectImage(altText, link, title)
         -> () // TODO
 
+/// Write a list of MarkdownSpan values to a PDF document
 and formatSpans cxt x = List.iter (formatSpan cxt x)
 
+/// Write a MarkdownParagraph value to a PDF document
 let rec formatParagraph (cxt : Context) (addParagraph : unit -> Paragraph) (mdParagraph : MarkdownParagraph) =
     let pdfParagraph = addParagraph()
     match cxt.StyleOverride with
@@ -146,9 +166,12 @@ let rec formatParagraph (cxt : Context) (addParagraph : unit -> Paragraph) (mdPa
                                 formatSpans cxt pdfParagraph spans
     | Paragraph(spans)       
     | Span(spans)            -> formatSpans cxt pdfParagraph spans
-    | CodeBlock(str)         -> pdfParagraph.Style <- MarkdownStyleNames.Code
-                                pdfParagraph.AddFormattedText(str) |> ignore
-    | HtmlBlock _            -> raise <| NotSupportedException()
+    
+    // treat the raw HTML as 'code', without writing a HTML to PDF renderer ;-)
+    | HtmlBlock code
+    | CodeBlock(code)        -> pdfParagraph.Style <- MarkdownStyleNames.Code
+                                pdfParagraph |> addFormattedText cxt code |> ignore
+
     | ListBlock _            -> () // TODO
     | QuotedBlock paragraphs -> 
         let cxt = { cxt with StyleOverride = Some MarkdownStyleNames.Quoted }
@@ -156,41 +179,50 @@ let rec formatParagraph (cxt : Context) (addParagraph : unit -> Paragraph) (mdPa
     | HorizontalRule         ->
         // not sure if it's the right choice, but let's interpret horizontal rule as a page break
         cxt.Document.LastSection.AddPageBreak()
-    | TableBlock(headers, alignments, rows)
-        -> let table = cxt.Document.LastSection.AddTable()
-           table.Style              <- MarkdownStyleNames.Table
-           table.Borders.Color      <- Colors.LightGray
-           table.Borders.Width      <- Unit.FromPoint 0.25
-           table.TopPadding         <- Unit.FromPoint 10.0
-           table.RightPadding       <- Unit.FromPoint 10.0
-           table.BottomPadding      <- Unit.FromPoint 10.0
-           table.LeftPadding        <- Unit.FromPoint 10.0
+    | TableBlock(headers, alignments, rows) -> 
+        let table = cxt.Document.LastSection.AddTable()
+        table.Style              <- MarkdownStyleNames.Table
+        table.Borders.Color      <- Colors.LightGray
+        table.Borders.Width      <- Unit.FromPoint 0.25
+        table.TopPadding         <- Unit.FromPoint 10.0
+        table.RightPadding       <- Unit.FromPoint 10.0
+        table.BottomPadding      <- Unit.FromPoint 10.0
+        table.LeftPadding        <- Unit.FromPoint 10.0
 
-           alignments 
-           |> List.map (fun alignment -> alignment, table.AddColumn())
-           |> List.iter (function | AlignRight, column   -> column.Format.Alignment <- ParagraphAlignment.Right
-                                  | AlignCenter, column  -> column.Format.Alignment <- ParagraphAlignment.Center
-                                  | AlignLeft, column    
-                                  | AlignDefault, column -> column.Format.Alignment <- ParagraphAlignment.Left)
-            
-           seq {
-              if headers.IsSome then yield headers.Value, { cxt with BoldOverride = Some true }
-              yield! rows |> Seq.map (fun row -> row, cxt)
-           } |> Seq.iter (fun (row, cxt) -> formatTableRow cxt table row)
+        alignments 
+        |> List.map (fun alignment -> alignment, table.AddColumn())
+        |> List.iter (function | AlignRight, column   -> column.Format.Alignment <- ParagraphAlignment.Right
+                               | AlignCenter, column  -> column.Format.Alignment <- ParagraphAlignment.Center
+                               | AlignLeft, column    
+                               | AlignDefault, column -> column.Format.Alignment <- ParagraphAlignment.Left)
+         
+        seq {
+           if headers.IsSome then yield headers.Value, { cxt with BoldOverride = Some true }
+           yield! rows |> Seq.map (fun row -> row, cxt)
+        } |> Seq.iter (fun (row, cxt) -> formatTableRow cxt table row)
 
+/// Write a list of MarkdownParagraph values to a PDF document
 and formatParagraphs (cxt : Context) addParagraph = List.iter (formatParagraph cxt addParagraph)
 
+/// Write a MarkdownTableRow value to a PDF document
 and formatTableRow (cxt : Context) (table : Table) (mdRow : MarkdownTableRow) = 
     let row = table.AddRow()
     mdRow |> List.iteri (fun idx paragraphs -> 
         let cell = row.Cells.[idx]
         formatParagraphs cxt cell.AddParagraph paragraphs)
 
-let formatMarkdown (document : Document) (paragraphs : MarkdownParagraphs) = 
+/// Format Markdown document and write the result to the specified PDF document
+let formatMarkdown (document : Document) links paragraphs = 
     setDefaultStyles document
     document.AddSection() |> ignore
 
-    let cxt = { Document = document; StyleOverride = None; BoldOverride = None; ItalicOverride = None }
+    let cxt = { 
+                Document        = document
+                Links           = links
+                StyleOverride   = None
+                BoldOverride    = None
+                ItalicOverride  = None 
+              }
     
     formatParagraphs cxt document.LastSection.AddParagraph paragraphs
 

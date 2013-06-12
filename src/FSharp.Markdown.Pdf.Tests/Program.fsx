@@ -65,7 +65,7 @@ row11|row12|row13|
 """
 
 let parsed = Markdown.Parse(markdownDoc)
-let pdfDoc = formatMarkdown (new Document()) parsed.Paragraphs
+let pdfDoc = formatMarkdown (new Document()) parsed.DefinedLinks parsed.Paragraphs
 
 let filename = @"C:\temp\markdown.pdf"
 pdfDoc.Save(filename)
