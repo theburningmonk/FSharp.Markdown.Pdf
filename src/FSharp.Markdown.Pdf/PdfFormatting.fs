@@ -78,9 +78,12 @@ let setDefaultStyles (document : Document) =
                   (fun style -> style.Font.Italic <- true)
 
     setIfNotExist MarkdownStyleNames.Quoted MarkdownStyleNames.Normal
-                  (fun style -> style.ParagraphFormat.LeftIndent <- Unit.FromPoint 4.0)
+                  (fun style -> style.ParagraphFormat.Borders.DistanceFromLeft  <- Unit.FromPoint 17.0
+                                style.ParagraphFormat.LeftIndent        <- Unit.FromPoint 20.0
+                                style.ParagraphFormat.Borders.Left      <- Border(Color = Colors.LightGray, Width = Unit.FromPoint 3.0)
+                                style.ParagraphFormat.Font.Color        <- Colors.Gray)
     setIfNotExist MarkdownStyleNames.Code MarkdownStyleNames.Normal
-                  (fun style -> style.ParagraphFormat.Borders.Distance  <- Unit.FromPoint 5.0
+                  (fun style -> style.ParagraphFormat.Borders.Distance  <- Unit.FromPoint 4.0
                                 style.ParagraphFormat.LeftIndent        <- Unit.FromPoint 5.0
                                 style.ParagraphFormat.Shading.Visible   <- true
                                 style.ParagraphFormat.Shading.Color     <- Colors.LightGray
@@ -135,14 +138,17 @@ and formatSpans x = List.iter (formatSpan x)
 
 let rec formatParagraph (cxt : Context) (mdParagraph : MarkdownParagraph) =
     let pdfParagraph = cxt.Document.LastSection.AddParagraph()
+    match cxt.StyleOverride with
+    | Some styleName -> pdfParagraph.Style <- styleName
+    | _ -> ()
     
     match mdParagraph with
-    | Heading(n, spans) -> pdfParagraph.Style <- "MdHeading" + string n
-                           formatSpans pdfParagraph spans
-    | Paragraph(spans)
-    | Span(spans)       -> formatSpans pdfParagraph spans
-    | CodeBlock(str)    -> pdfParagraph.Style <- MarkdownStyleNames.Code
-                           pdfParagraph.AddFormattedText(str) |> ignore
+    | Heading(n, spans)      -> pdfParagraph.Style <- "MdHeading" + string n
+                                formatSpans pdfParagraph spans
+    | Paragraph(spans)       
+    | Span(spans)            -> formatSpans pdfParagraph spans
+    | CodeBlock(str)         -> pdfParagraph.Style <- MarkdownStyleNames.Code
+                                pdfParagraph.AddFormattedText(str) |> ignore
     | HtmlBlock _            -> raise <| NotSupportedException()
     | ListBlock _            -> () // TODO
     | QuotedBlock paragraphs -> 

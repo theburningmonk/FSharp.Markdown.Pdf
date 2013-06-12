@@ -42,6 +42,11 @@ This is [an example](http://example.com/ "Title") inline link.
 
 See my [About][about] for more details.
 
+> "This entire paragraph of text will be enclosed in an HTML blockquote element.
+Blockquote elements are reflowable. You may arbitrarily
+wrap the text to your liking, and it will all be parsed
+into a single blockquote element."
+
 Powered By ![Alt text1](http://www.pdfsharp.net/wiki/Images/PoweredBy.png)
 
 Powered By ![Alt text2][id]
