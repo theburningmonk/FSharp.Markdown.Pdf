@@ -128,59 +128,60 @@ let (|LookupKey|_|) (dict:IDictionary<_, _>) (key:string) =
   |> Seq.tryPick (fun key -> match dict.TryGetValue(key) with | true, v -> Some v | _ -> None)
 
 /// Write MarkdownSpan value to a PDF document
-let rec inline formatSpan (cxt : Context) (paragraph : Paragraph) = function
-    | Literal(str)    -> paragraph |> addFormattedText cxt str |> ignore
+let rec inline formatSpan (ctx : Context) (paragraph : Paragraph) = function
+    | Literal(str)    -> paragraph |> addFormattedText ctx str |> ignore
     | HardLineBreak   -> paragraph |> addLineBreak () |> ignore
 
-    | Strong(spans)   -> let cxt = { cxt with BoldOverride = Some true }
-                         formatSpans cxt paragraph spans
-    | Emphasis(spans) -> let cxt = { cxt with ItalicOverride = Some true }
-                         formatSpans cxt paragraph spans
+    | Strong(spans)   -> let ctx = { ctx with BoldOverride = Some true }
+                         formatSpans ctx paragraph spans
+    | Emphasis(spans) -> let ctx = { ctx with ItalicOverride = Some true }
+                         formatSpans ctx paragraph spans
     | InlineCode(str) -> paragraph
                          |> addFormattedTextWithStyle MarkdownStyleNames.Code str 
                          |> ignore // TODO : this doesn't work
+
+    | IndirectLink([ Literal str ], _, LookupKey ctx.Links (link, _))
     | DirectLink([ Literal str ], (link, _))
         -> paragraph
            |> addHyperLink link
            |> addFormattedTextWithStyle MarkdownStyleNames.Hyperlink str |> ignore
-    | IndirectLink([ Literal str ], original, _)
-        -> () // TODO
+
+    | IndirectImage(altText, _, LookupKey ctx.Links (link, _))
     | DirectImage(altText, (link, _))
         -> let localFile = downloadImg link
            paragraph.AddImage(localFile) |> ignore
-    | IndirectImage(altText, link, title)
-        -> () // TODO
+    | _ -> ()
 
 /// Write a list of MarkdownSpan values to a PDF document
-and formatSpans cxt x = List.iter (formatSpan cxt x)
+and formatSpans ctx x = List.iter (formatSpan ctx x)
 
 /// Write a MarkdownParagraph value to a PDF document
-let rec formatParagraph (cxt : Context) (addParagraph : unit -> Paragraph) (mdParagraph : MarkdownParagraph) =
+let rec formatParagraph (ctx : Context) (addParagraph : unit -> Paragraph) (mdParagraph : MarkdownParagraph) =
     let pdfParagraph = addParagraph()
-    match cxt.StyleOverride with
+    match ctx.StyleOverride with
     | Some styleName -> pdfParagraph.Style <- styleName
     | _ -> ()
     
     match mdParagraph with
     | Heading(n, spans)      -> pdfParagraph.Style <- "MdHeading" + string n
-                                formatSpans cxt pdfParagraph spans
+                                formatSpans ctx pdfParagraph spans
     | Paragraph(spans)       
-    | Span(spans)            -> formatSpans cxt pdfParagraph spans
+    | Span(spans)            -> formatSpans ctx pdfParagraph spans
     
     // treat the raw HTML as 'code', without writing a HTML to PDF renderer ;-)
     | HtmlBlock code
     | CodeBlock(code)        -> pdfParagraph.Style <- MarkdownStyleNames.Code
-                                pdfParagraph |> addFormattedText cxt code |> ignore
+                                pdfParagraph |> addFormattedText ctx code |> ignore
 
     | ListBlock _            -> () // TODO
     | QuotedBlock paragraphs -> 
-        let cxt = { cxt with StyleOverride = Some MarkdownStyleNames.Quoted }
-        formatParagraphs cxt addParagraph paragraphs
+        let ctx = { ctx with StyleOverride = Some MarkdownStyleNames.Quoted }
+        formatParagraphs ctx addParagraph paragraphs
     | HorizontalRule         ->
         // not sure if it's the right choice, but let's interpret horizontal rule as a page break
-        cxt.Document.LastSection.AddPageBreak()
+        ctx.Document.LastSection.AddPageBreak()
     | TableBlock(headers, alignments, rows) -> 
-        let table = cxt.Document.LastSection.AddTable()
+        let table = ctx.Document.LastSection.AddTable()
         table.Style              <- MarkdownStyleNames.Table
         table.Borders.Color      <- Colors.LightGray
         table.Borders.Width      <- Unit.FromPoint 0.25
@@ -197,26 +198,26 @@ let rec formatParagraph (cxt : Context) (addParagraph : unit -> Paragraph) (mdPa
                                | AlignDefault, column -> column.Format.Alignment <- ParagraphAlignment.Left)
          
         seq {
-           if headers.IsSome then yield headers.Value, { cxt with BoldOverride = Some true }
-           yield! rows |> Seq.map (fun row -> row, cxt)
-        } |> Seq.iter (fun (row, cxt) -> formatTableRow cxt table row)
+           if headers.IsSome then yield headers.Value, { ctx with BoldOverride = Some true }
+           yield! rows |> Seq.map (fun row -> row, ctx)
+        } |> Seq.iter (fun (row, ctx) -> formatTableRow ctx table row)
 
 /// Write a list of MarkdownParagraph values to a PDF document
-and formatParagraphs (cxt : Context) addParagraph = List.iter (formatParagraph cxt addParagraph)
+and formatParagraphs (ctx : Context) addParagraph = List.iter (formatParagraph ctx addParagraph)
 
 /// Write a MarkdownTableRow value to a PDF document
-and formatTableRow (cxt : Context) (table : Table) (mdRow : MarkdownTableRow) = 
+and formatTableRow (ctx : Context) (table : Table) (mdRow : MarkdownTableRow) = 
     let row = table.AddRow()
     mdRow |> List.iteri (fun idx paragraphs -> 
         let cell = row.Cells.[idx]
-        formatParagraphs cxt cell.AddParagraph paragraphs)
+        formatParagraphs ctx cell.AddParagraph paragraphs)
 
 /// Format Markdown document and write the result to the specified PDF document
 let formatMarkdown (document : Document) links paragraphs = 
     setDefaultStyles document
     document.AddSection() |> ignore
 
-    let cxt = { 
+    let ctx = { 
                 Document        = document
                 Links           = links
                 StyleOverride   = None
@@ -224,7 +225,7 @@ let formatMarkdown (document : Document) links paragraphs =
                 ItalicOverride  = None 
               }
     
-    formatParagraphs cxt document.LastSection.AddParagraph paragraphs
+    formatParagraphs ctx document.LastSection.AddParagraph paragraphs
 
     let renderer = PdfDocumentRenderer(false, PdfFontEmbedding.Always)
     renderer.Document <- document

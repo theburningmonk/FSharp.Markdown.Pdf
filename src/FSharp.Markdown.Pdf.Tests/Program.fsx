@@ -41,6 +41,7 @@ This is [an example](http://example.com/ "Title") inline link.
 [This link](http://example.net/) has no title attribute.
 
 See my [About][about] for more details.
+See my [about][] for more details.
 
 > "This *entire* __paragraph__ ***of*** text will be enclosed in an HTML blockquote element.
 Blockquote elements are reflowable. You may arbitrarily
