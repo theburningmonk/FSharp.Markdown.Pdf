@@ -16,6 +16,9 @@ type StyleName = string
 type LinkId    = string
 type Link      = string
 type Title     = string option
+type ListDepth = int
+type ListIndex = int
+type ListState = MarkdownListKind * ListDepth * ListIndex
 
 /// Constant style names so that the user has the option to provide his own styling
 /// for a given PDF document
@@ -42,15 +45,22 @@ module MarkdownStyleNames =
     let Code          = "MdCode"
     [<Literal>]
     let Table         = "MdTable"
+    [<Literal>]
+    let List1         = "MdList1"
+    [<Literal>]
+    let List2         = "MdList2"
+    [<Literal>]
+    let List3         = "MdList3"
 
 /// Context passed around while formatting the PDF document
 type Context = 
     { 
-        Document        : Document
-        Links           : IDictionary<LinkId, Link * Title>
-        StyleOverride   : StyleName option
-        BoldOverride    : bool option
-        ItalicOverride  : bool option
+        Document            : Document
+        Links               : IDictionary<LinkId, Link * Title>
+        StyleOverride       : StyleName option
+        BoldOverride        : bool option
+        ItalicOverride      : bool option
+        ListState           : ListState option
     }
 
 /// Sets the default styles if user-provided overrides do not exist
@@ -94,6 +104,13 @@ let setDefaultStyles (document : Document) =
 
     setIfNotExist MarkdownStyleNames.Table MarkdownStyleNames.Normal (fun style -> ())
 
+    setIfNotExist MarkdownStyleNames.List1 MarkdownStyleNames.Normal 
+                  (fun style -> style.ParagraphFormat.LeftIndent        <- Unit.FromPoint 7.0)
+    setIfNotExist MarkdownStyleNames.List2 MarkdownStyleNames.Normal 
+                  (fun style -> style.ParagraphFormat.LeftIndent        <- Unit.FromPoint 14.0)
+    setIfNotExist MarkdownStyleNames.List3 MarkdownStyleNames.Normal 
+                  (fun style -> style.ParagraphFormat.LeftIndent        <- Unit.FromPoint 21.0)
+
 /// Helper function for updating the ParagraphElements object part of Paragraph/Hyperlink, etc.
 let inline updateElements f x = 
     let elements = (^a : (member Elements : ParagraphElements) x)
@@ -123,9 +140,17 @@ let downloadImg (link : Link) =
 
 /// Lookup a specified key in a dictionary, possibly ignoring newlines or spaces in the key.
 let (|LookupKey|_|) (dict:IDictionary<_, _>) (key:string) = 
-  [ key; key.Replace("\r\n", ""); key.Replace("\r\n", " "); 
-    key.Replace("\n", ""); key.Replace("\n", " ") ]
-  |> Seq.tryPick (fun key -> match dict.TryGetValue(key) with | true, v -> Some v | _ -> None)
+    [ key; key.Replace("\r\n", ""); key.Replace("\r\n", " "); 
+      key.Replace("\n", ""); key.Replace("\n", " ") ]
+    |> Seq.tryPick (fun key -> match dict.TryGetValue(key) with | true, v -> Some v | _ -> None)
+
+/// Returns the ListType value based on the MarkdownListType and a zero-based depth
+let getListType = 
+    let orderedListTypes   = [| ListType.NumberList1; ListType.NumberList2; ListType.NumberList3 |]
+    let unorderedListTypes = [| ListType.BulletList1; ListType.BulletList2; ListType.BulletList3 |]
+
+    (fun kind depth -> 
+        match kind with | Ordered -> orderedListTypes.[depth] | _ -> unorderedListTypes.[depth])
 
 /// Write MarkdownSpan value to a PDF document
 let rec inline formatSpan (ctx : Context) (paragraph : Paragraph) = function
@@ -155,31 +180,56 @@ let rec inline formatSpan (ctx : Context) (paragraph : Paragraph) = function
 /// Write a list of MarkdownSpan values to a PDF document
 and formatSpans ctx x = List.iter (formatSpan ctx x)
 
-/// Write a MarkdownParagraph value to a PDF document
-let rec formatParagraph (ctx : Context) (addParagraph : unit -> Paragraph) (mdParagraph : MarkdownParagraph) =
-    let pdfParagraph = addParagraph()
-    match ctx.StyleOverride with
-    | Some styleName -> pdfParagraph.Style <- styleName
+/// Creates a new paragraph using the specified context and the factory function
+let getParagraph (ctx : Context) (make : unit -> Paragraph) =
+    let pdfParagraph = make()
+    match ctx.StyleOverride with | Some styleName -> pdfParagraph.Style <- styleName | _ -> ()
+    match ctx.ListState with 
+    | Some (kind, depth, idx) -> 
+        let listInfo = ListInfo()
+        listInfo.ContinuePreviousList <- idx > 0
+        listInfo.ListType <- getListType kind depth
+        pdfParagraph.Format.ListInfo <- listInfo
     | _ -> ()
-    
-    match mdParagraph with
-    | Heading(n, spans)      -> pdfParagraph.Style <- "MdHeading" + string n
-                                formatSpans ctx pdfParagraph spans
+
+    pdfParagraph
+
+/// Write a MarkdownParagraph value to a PDF document
+let rec formatParagraph (ctx : Context) (make : unit -> Paragraph) = function
+    | Heading(n, spans) -> 
+        let paragraph = getParagraph ctx make
+        paragraph.Style <- "MdHeading" + string n
+        formatSpans ctx paragraph spans
+
     | Paragraph(spans)       
-    | Span(spans)            -> formatSpans ctx pdfParagraph spans
+    | Span(spans)       ->
+        let paragraph = getParagraph ctx make
+        formatSpans ctx paragraph spans
     
     // treat the raw HTML as 'code', without writing a HTML to PDF renderer ;-)
     | HtmlBlock code
-    | CodeBlock(code)        -> pdfParagraph.Style <- MarkdownStyleNames.Code
-                                pdfParagraph |> addFormattedText ctx code |> ignore
+    | CodeBlock(code)   -> 
+        let paragraph = getParagraph ctx make
+        paragraph.Style <- MarkdownStyleNames.Code
+        paragraph |> addFormattedText ctx code |> ignore
 
-    | ListBlock _            -> () // TODO
+    | ListBlock(kind, items) ->        
+        let listDepth = match ctx.ListState with | Some (_, depth, _) -> depth + 1 | _ -> 0
+        let ctx = { ctx with StyleOverride = Some <| "MdList" + string (listDepth + 1) }
+
+        items 
+        |> List.iteri (fun idx paragraphs ->
+            let ctx = { ctx with ListState = Some (kind, listDepth, idx) }
+            formatParagraphs ctx make paragraphs)
+
     | QuotedBlock paragraphs -> 
         let ctx = { ctx with StyleOverride = Some MarkdownStyleNames.Quoted }
-        formatParagraphs ctx addParagraph paragraphs
-    | HorizontalRule         ->
-        // not sure if it's the right choice, but let's interpret horizontal rule as a page break
+        formatParagraphs ctx make paragraphs
+
+    // not sure if it's the right choice, but let's interpret horizontal rule as a page break
+    | HorizontalRule         -> 
         ctx.Document.LastSection.AddPageBreak()
+
     | TableBlock(headers, alignments, rows) -> 
         let table = ctx.Document.LastSection.AddTable()
         table.Style              <- MarkdownStyleNames.Table
@@ -202,8 +252,10 @@ let rec formatParagraph (ctx : Context) (addParagraph : unit -> Paragraph) (mdPa
            yield! rows |> Seq.map (fun row -> row, ctx)
         } |> Seq.iter (fun (row, ctx) -> formatTableRow ctx table row)
 
+    | _ -> ()
+
 /// Write a list of MarkdownParagraph values to a PDF document
-and formatParagraphs (ctx : Context) addParagraph = List.iter (formatParagraph ctx addParagraph)
+and formatParagraphs (ctx : Context) make = List.iter (formatParagraph ctx make)
 
 /// Write a MarkdownTableRow value to a PDF document
 and formatTableRow (ctx : Context) (table : Table) (mdRow : MarkdownTableRow) = 
@@ -218,11 +270,12 @@ let formatMarkdown (document : Document) links paragraphs =
     document.AddSection() |> ignore
 
     let ctx = { 
-                Document        = document
-                Links           = links
-                StyleOverride   = None
-                BoldOverride    = None
-                ItalicOverride  = None 
+                Document            = document
+                Links               = links
+                StyleOverride       = None
+                BoldOverride        = None
+                ItalicOverride      = None
+                ListState           = None
               }
     
     formatParagraphs ctx document.LastSection.AddParagraph paragraphs

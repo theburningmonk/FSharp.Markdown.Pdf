@@ -37,6 +37,22 @@ Some text with `some code` inside
     line 2 of code
     line 3 of code
 
+* An item in a bulleted (unordered) list
+    + A subitem, indented with 4 spaces
+        - A sub subitem, indented with another 4 spaces
+- Another item in a bulleted list
+* Here's another item
+
+another list
+
+1. An item in an enumerated (ordered) list
+    1. A subitem, indented with 4 spaces
+        1. A sub subitem, indented with another 4 spaces
+2. Another item in an enumerated list
+9. Another item
+5. Yet another item
+
+
 This is [an example](http://example.com/ "Title") inline link.
 [This link](http://example.net/) has no title attribute.
 
