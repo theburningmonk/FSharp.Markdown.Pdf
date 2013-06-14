@@ -11,7 +11,7 @@ open System.Runtime.InteropServices
 
 [<assembly: AssemblyProduct("FSharp.Markdown.Pdf")>]
 [<assembly: AssemblyCopyright("Copyright @ Yan Cui 2013")>]
-[<assembly: AssemblyVersion("0.1.0")>]
-[<assembly: AssemblyFileVersion("0.1.0")>]
+[<assembly: AssemblyVersion("0.2.0")>]
+[<assembly: AssemblyFileVersion("0.2.0")>]
 
 do ()
