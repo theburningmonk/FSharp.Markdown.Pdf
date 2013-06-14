@@ -38,3 +38,23 @@ module MarkdownExt =
         /// Transform the provided Markdown document into PDF. The result will be 
         /// written to the provided stream.
         static member WritePdf      : MarkdownDocument * Stream -> unit
+
+/// Type akin to Markdown to expose the above static extension methods so that they're visible in C#
+/// since the extension methods defined with 'type XXX with' in F# are not visible in C#
+[<Class>]
+type MarkdownPdf =
+    /// Transform Markdown document into PDF. The result will be written to the 
+    /// provided output path.
+    static member Transform : string * string -> unit
+
+    /// Transform Markdown document into PDF. The result will be written to the
+    /// provided stream.
+    static member Transform : string * Stream -> unit
+
+    /// Transform the provided Markdown document into PDF. The result will be 
+    /// written to the provided output path.
+    static member Write     : MarkdownDocument * string -> unit
+
+    /// Transform the provided Markdown document into PDF. The result will be 
+    /// written to the provided stream.
+    static member Write     : MarkdownDocument * Stream -> unit

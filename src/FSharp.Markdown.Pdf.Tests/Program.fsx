@@ -97,3 +97,10 @@ let stream = File.OpenWrite(@"C:\temp\markdown3.pdf")
 Markdown.TransformPdf(markdownDoc, stream)
 stream.Close()
 Process.Start(@"C:\temp\markdown3.pdf")
+
+MarkdownPdf.Transform(markdownDoc, @"C:\temp\markdown4.pdf")
+Process.Start(@"C:\temp\markdown4.pdf")
+
+let stream' = File.OpenWrite(@"C:\temp\markdown5.pdf")
+MarkdownPdf.Transform(markdownDoc, stream')
+Process.Start(@"C:\temp\markdown5.pdf")

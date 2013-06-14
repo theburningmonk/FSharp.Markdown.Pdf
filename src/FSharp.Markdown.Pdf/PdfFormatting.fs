@@ -283,3 +283,9 @@ module MarkdownExt =
         static member WritePdf(doc : MarkdownDocument, stream : Stream) =
             let pdfDocument = formatMarkdown (new Document()) doc.DefinedLinks doc.Paragraphs
             pdfDocument.Save(stream)
+
+type MarkdownPdf =
+    static member Transform(text, outputPath : string) = Markdown.TransformPdf(text, outputPath)
+    static member Transform(text, stream : Stream)     = Markdown.TransformPdf(text, stream)
+    static member Write(doc, outputPath : string)      = Markdown.WritePdf(doc, outputPath)
+    static member Write(doc, stream : Stream)          = Markdown.WritePdf(doc, stream)
