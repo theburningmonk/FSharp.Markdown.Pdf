@@ -58,12 +58,22 @@ another list
             MarkdownPdf.Transform(markdown, @"C:\temp\markdown.pdf");
             Process.Start(@"C:\temp\markdown.pdf");
 
-            using (var memStream = new MemoryStream())
+            using (var fileStream = File.OpenWrite(@"C:\temp\markdown2.pdf"))
             {
-                MarkdownPdf.Transform(markdown, memStream);
-                File.WriteAllBytes(@"C:\temp\markdown2.pdf", memStream.ToArray());
-            }            
-            Process.Start(@"C:\temp\markdown2.pdf");
+                MarkdownPdf.Transform(markdown, fileStream);
+                Process.Start(@"C:\temp\markdown2.pdf");
+            }
+
+            var parsed = Markdown.Parse(markdown);
+
+            MarkdownPdf.Write(parsed, @"C:\temp\markdown3.pdf");
+            Process.Start(@"C:\temp\markdown3.pdf");
+
+            using (var fileStream = File.OpenWrite(@"C:\temp\markdown4.pdf"))
+            {
+                MarkdownPdf.Write(parsed, fileStream);
+                Process.Start(@"C:\temp\markdown4.pdf");
+            }
 
             Console.WriteLine("All done... press any key to exit");
             Console.ReadKey();
