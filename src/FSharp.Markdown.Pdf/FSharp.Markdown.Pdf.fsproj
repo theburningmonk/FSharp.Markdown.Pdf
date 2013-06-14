@@ -39,6 +39,8 @@
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="MarkdownStyleNames.fs" />
+    <Compile Include="PdfFormatting.fsi" />
     <Compile Include="PdfFormatting.fs" />
     <None Include="packages.config" />
   </ItemGroup>

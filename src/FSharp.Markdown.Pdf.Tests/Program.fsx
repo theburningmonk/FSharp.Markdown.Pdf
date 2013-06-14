@@ -87,3 +87,13 @@ let pdfDoc = formatMarkdown (new Document()) parsed.DefinedLinks parsed.Paragrap
 let filename = @"C:\temp\markdown.pdf"
 pdfDoc.Save(filename)
 Process.Start(filename)
+
+Markdown.TransformPdf(markdownDoc, @"C:\temp\markdown2.pdf")
+Process.Start(@"C:\temp\markdown2.pdf")
+
+open System.IO
+
+let stream = File.OpenWrite(@"C:\temp\markdown3.pdf")
+Markdown.TransformPdf(markdownDoc, stream)
+stream.Close()
+Process.Start(@"C:\temp\markdown3.pdf")
