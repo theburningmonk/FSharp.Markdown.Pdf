@@ -75,7 +75,7 @@ This is a table:
 Heading1|Heading2|Heading3|Heading4
 --------|:--------:|-------:|:-------
 row11|row12|row13|
-*row2.1*|__row2.2__|***row2.3***|[row2.4](http://example.net/)
+*row2.1*|__row2.2__|***row2.3***|row2.4
 
 [id]: http://www.pdfsharp.net/wiki/Images/PoweredBy.png "some title"
 [about]: /about/ "About title"
@@ -104,3 +104,16 @@ Process.Start(@"C:\temp\markdown4.pdf")
 let stream' = File.OpenWrite(@"C:\temp\markdown5.pdf")
 MarkdownPdf.Transform(markdownDoc, stream')
 Process.Start(@"C:\temp\markdown5.pdf")
+
+// custom styling
+let doc = new Document()
+let quotedBlockStyle = doc.Styles.AddStyle(MarkdownStyleNames.Quoted, StyleNames.Normal)
+quotedBlockStyle.ParagraphFormat.Shading.Visible    <- true
+quotedBlockStyle.ParagraphFormat.Shading.Color      <- Colors.Black
+quotedBlockStyle.Font.Color         <- Colors.White
+
+let pdfDoc2 = formatMarkdown doc parsed.DefinedLinks parsed.Paragraphs
+
+let filename2 = @"C:\temp\markdown-customized.pdf"
+pdfDoc2.Save(filename2)
+Process.Start(filename2)

@@ -2,6 +2,7 @@
 
 open System
 open System.Collections.Generic
+open System.Linq
 open System.Net
 open System.IO
 
@@ -36,7 +37,9 @@ module PdfFormatting =
     /// Sets the default styles if user-provided overrides do not exist
     let setDefaultStyles (document : Document) =
         let setIfNotExist styleName baseStyleName update =
-            if not <| document.Styles.HasValue styleName then
+            // document.Styles.HasValue doesn't work as expected, hence the weirdness here..
+            let exists = document.Styles.Cast<Style>() |> Seq.exists (fun style -> style.Name = styleName)
+            if not exists then
                 document.Styles.AddStyle(styleName, baseStyleName) |> update
 
         setIfNotExist MarkdownStyleNames.Heading1 StyleNames.Heading1 
