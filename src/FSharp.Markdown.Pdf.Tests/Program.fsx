@@ -107,6 +107,7 @@ Process.Start(@"C:\temp\markdown5.pdf")
 
 // custom styling
 let doc = new Document()
+
 let quotedBlockStyle = doc.Styles.AddStyle(MarkdownStyleNames.Quoted, StyleNames.Normal)
 quotedBlockStyle.ParagraphFormat.Shading.Visible    <- true
 quotedBlockStyle.ParagraphFormat.Shading.Color      <- Colors.Black
