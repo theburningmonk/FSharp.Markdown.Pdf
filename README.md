@@ -12,6 +12,7 @@ PDF formatting from FSharp.Markdown (part of the [F# Formatting](https://github.
 
 From F#, you can use the `Markdown.TransformPdf` and `Markdown.WritePdf` extension methods:
 
+```fsharp
     open FSharp.Markdown
     open FSharp.Markdown.Pdf
 
@@ -34,11 +35,13 @@ From F#, you can use the `Markdown.TransformPdf` and `Markdown.WritePdf` extensi
     // before saving result to stream
     use stream' = File.OpenWrite(@"C:\temp\markdown4.pdf")
     Markdown.WritePdf(parsed, stream')
+```
     
 ### C# Examples
 
 The `Markdown.TransformPdf` and `Markdown.WritePdf` extensions methods are not visible to C# due to the way F# extension methods defined with the `type XYZ with` syntax are compiled, so in its place, there is a `MarkdownPdf` type which you can use from C#:
     
+```csharp
     using FSharp.Markdown;
     using FSharp.Markdown.Pdf;
     
@@ -65,3 +68,4 @@ The `Markdown.TransformPdf` and `Markdown.WritePdf` extensions methods are not v
     {
         MarkdownPdf.Write(parsed, stream2);
     }
+```
