@@ -69,6 +69,3 @@ The `Markdown.TransformPdf` and `Markdown.WritePdf` extensions methods are not v
         MarkdownPdf.Write(parsed, stream2);
     }
 ```
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/theburningmonk/fsharp.markdown.pdf/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
