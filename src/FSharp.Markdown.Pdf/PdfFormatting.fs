@@ -258,6 +258,22 @@ module PdfFormatting =
         renderer.RenderDocument()
         renderer.PdfDocument
 
+    /// Format Markdown document and write the result to the specified section
+    let addMarkdown (document : Document) (section : Section) links paragraphs =
+        setDefaultStyles document
+
+        let ctx = { 
+                    Document            = document
+                    Links               = links
+                    StyleOverride       = None
+                    BoldOverride        = None
+                    ItalicOverride      = None
+                    ListState           = None
+                  }
+    
+//        formatParagraphs ctx document.LastSection.AddParagraph paragraphs
+        formatParagraphs ctx section.AddParagraph paragraphs
+
 [<AutoOpen>]
 module MarkdownExt =
     type Markdown with
@@ -287,8 +303,17 @@ module MarkdownExt =
             let pdfDocument = formatMarkdown (new Document()) doc.DefinedLinks doc.Paragraphs
             pdfDocument.Save(stream)
 
+        static member AddMarkdown (document : Document, section : Section, text) = 
+            let doc = Markdown.Parse(text)
+            addMarkdown document section doc.DefinedLinks doc.Paragraphs
+
+        static member AddMarkdown (document : Document, section : Section, mdDoc : MarkdownDocument) = 
+            addMarkdown document section mdDoc.DefinedLinks mdDoc.Paragraphs
+
 type MarkdownPdf =
     static member Transform(text, outputPath : string) = Markdown.TransformPdf(text, outputPath)
     static member Transform(text, stream : Stream)     = Markdown.TransformPdf(text, stream)
     static member Write(doc, outputPath : string)      = Markdown.WritePdf(doc, outputPath)
     static member Write(doc, stream : Stream)          = Markdown.WritePdf(doc, stream)
+    static member AddMarkdown(doc, section, text : string)      = Markdown.AddMarkdown(doc, section, text)
+    static member AddMarkdown(doc, section, mdDoc : MarkdownDocument) = Markdown.AddMarkdown(doc, section, mdDoc)
