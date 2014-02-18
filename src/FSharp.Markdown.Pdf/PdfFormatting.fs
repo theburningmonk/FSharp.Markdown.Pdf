@@ -180,7 +180,7 @@ module PdfFormatting =
             formatSpans ctx paragraph spans
     
         // treat the raw HTML as 'code', without writing a HTML to PDF renderer ;-)
-        | HtmlBlock code
+        | InlineBlock code
         | CodeBlock(code)   -> 
             let paragraph = getParagraph ctx make
             paragraph.Style <- MarkdownStyleNames.Code

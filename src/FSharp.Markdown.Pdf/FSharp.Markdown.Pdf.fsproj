@@ -37,24 +37,38 @@
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')" />
+  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="MarkdownStyleNames.fs" />
     <Compile Include="PdfFormatting.fsi" />
     <Compile Include="PdfFormatting.fs" />
     <None Include="packages.config" />
+    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="FSharp.CodeFormat">
-      <HintPath>..\packages\FSharp.Formatting.1.0.15\lib\net40\FSharp.CodeFormat.dll</HintPath>
+    <Reference Include="CSharpFormat">
+      <HintPath>..\packages\FSharp.Formatting.2.3.10-beta\lib\net40\CSharpFormat.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FSharp.CompilerBinding">
-      <HintPath>..\packages\FSharp.Formatting.1.0.15\lib\net40\FSharp.CompilerBinding.dll</HintPath>
+    <Reference Include="FSharp.CodeFormat">
+      <HintPath>..\packages\FSharp.Formatting.2.3.10-beta\lib\net40\FSharp.CodeFormat.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FSharp.Compiler.Service">
+      <HintPath>..\packages\FSharp.Compiler.Service.0.0.20\lib\net40\FSharp.Compiler.Service.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FSharp.Literate">
+      <HintPath>..\packages\FSharp.Formatting.2.3.10-beta\lib\net40\FSharp.Literate.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Markdown">
-      <HintPath>..\packages\FSharp.Formatting.1.0.15\lib\net40\FSharp.Markdown.dll</HintPath>
+      <HintPath>..\packages\FSharp.Formatting.2.3.10-beta\lib\net40\FSharp.Markdown.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FSharp.MetadataFormat">
+      <HintPath>..\packages\FSharp.Formatting.2.3.10-beta\lib\net40\FSharp.MetadataFormat.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MigraDoc.DocumentObjectModel">
@@ -81,12 +95,19 @@
       <HintPath>..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\PdfSharp.Charting.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="RazorEngine">
+      <HintPath>..\packages\RazorEngine.3.4.1\lib\net45\RazorEngine.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Web.Razor">
+      <HintPath>..\packages\Microsoft.AspNet.Razor.3.1.1\lib\net45\System.Web.Razor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
-  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
