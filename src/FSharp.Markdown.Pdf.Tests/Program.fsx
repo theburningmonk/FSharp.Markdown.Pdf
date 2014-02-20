@@ -10,7 +10,9 @@ open System.Diagnostics
 open FSharp.Markdown
 open FSharp.Markdown.Pdf
 
+open PdfSharp.Pdf
 open MigraDoc.DocumentObjectModel
+open MigraDoc.Rendering
 
 let markdownDoc = """
 # This is header 1
@@ -105,15 +107,38 @@ let stream' = File.OpenWrite(@"C:\temp\markdown5.pdf")
 MarkdownPdf.Transform(markdownDoc, stream')
 Process.Start(@"C:\temp\markdown5.pdf")
 
-// custom styling
 let doc = new Document()
+doc.AddSection() |> ignore
+let sec = doc.LastSection
+MarkdownPdf.AddMarkdown(doc, sec, markdownDoc)
 
-let quotedBlockStyle = doc.Styles.AddStyle(MarkdownStyleNames.Quoted, StyleNames.Normal)
+let renderer = PdfDocumentRenderer(false, PdfFontEmbedding.Always)
+renderer.Document <- doc
+renderer.RenderDocument()
+renderer.PdfDocument.Save(@"C:\temp\markdown6.pdf")
+Process.Start(@"C:\temp\markdown6.pdf")
+
+let doc2 = new Document()
+doc2.AddSection() |> ignore
+let sec2 = doc2.LastSection
+MarkdownPdf.AddMarkdown(doc2, sec2, parsed)
+
+let renderer2 = PdfDocumentRenderer(false, PdfFontEmbedding.Always)
+renderer2.Document <- doc2
+renderer2.RenderDocument()
+renderer2.PdfDocument.Save(@"C:\temp\markdown7.pdf")
+Process.Start(@"C:\temp\markdown7.pdf")
+
+
+// custom styling
+let doc3 = new Document()
+
+let quotedBlockStyle = doc3.Styles.AddStyle(MarkdownStyleNames.Quoted, StyleNames.Normal)
 quotedBlockStyle.ParagraphFormat.Shading.Visible    <- true
 quotedBlockStyle.ParagraphFormat.Shading.Color      <- Colors.Black
 quotedBlockStyle.Font.Color         <- Colors.White
 
-let pdfDoc2 = formatMarkdown doc parsed.DefinedLinks parsed.Paragraphs
+let pdfDoc2 = formatMarkdown doc3 parsed.DefinedLinks parsed.Paragraphs
 
 let filename2 = @"C:\temp\markdown-customized.pdf"
 pdfDoc2.Save(filename2)

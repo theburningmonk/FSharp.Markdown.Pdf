@@ -180,7 +180,7 @@ module PdfFormatting =
             formatSpans ctx paragraph spans
     
         // treat the raw HTML as 'code', without writing a HTML to PDF renderer ;-)
-        | HtmlBlock code
+        | InlineBlock code
         | CodeBlock(code)   -> 
             let paragraph = getParagraph ctx make
             paragraph.Style <- MarkdownStyleNames.Code
@@ -213,12 +213,21 @@ module PdfFormatting =
             table.BottomPadding      <- Unit.FromPoint 10.0
             table.LeftPadding        <- Unit.FromPoint 10.0
 
+            let pageSetup = ctx.Document.DefaultPageSetup
+            let colWidth = double (pageSetup.PageWidth.Point - pageSetup.RightMargin.Point - pageSetup.LeftMargin.Point)  / double (alignments.Count())
+
             alignments 
             |> List.map (fun alignment -> alignment, table.AddColumn())
             |> List.iter (function | AlignRight, column   -> column.Format.Alignment <- ParagraphAlignment.Right
                                    | AlignCenter, column  -> column.Format.Alignment <- ParagraphAlignment.Center
                                    | AlignLeft, column    
                                    | AlignDefault, column -> column.Format.Alignment <- ParagraphAlignment.Left)
+
+//            for col in table.Columns do
+//                printfn "col %s width set to %f" (col.ToString()) colWidth
+//                col.Width <- Unit.FromPoint colWidth
+
+            table.Columns |> (fun column -> column.Width <- Unit.FromPoint colWidth)
          
             seq {
                if headers.IsSome then yield headers.Value, { ctx with BoldOverride = Some true }
@@ -258,6 +267,22 @@ module PdfFormatting =
         renderer.RenderDocument()
         renderer.PdfDocument
 
+    /// Format Markdown document and write the result to the specified section
+    let addMarkdown (document : Document) (section : Section) links paragraphs =
+        setDefaultStyles document
+
+        let ctx = { 
+                    Document            = document
+                    Links               = links
+                    StyleOverride       = None
+                    BoldOverride        = None
+                    ItalicOverride      = None
+                    ListState           = None
+                  }
+    
+//        formatParagraphs ctx document.LastSection.AddParagraph paragraphs
+        formatParagraphs ctx section.AddParagraph paragraphs
+
 [<AutoOpen>]
 module MarkdownExt =
     type Markdown with
@@ -287,8 +312,17 @@ module MarkdownExt =
             let pdfDocument = formatMarkdown (new Document()) doc.DefinedLinks doc.Paragraphs
             pdfDocument.Save(stream)
 
+        static member AddMarkdown (document : Document, section : Section, text) = 
+            let doc = Markdown.Parse(text)
+            addMarkdown document section doc.DefinedLinks doc.Paragraphs
+
+        static member AddMarkdown (document : Document, section : Section, mdDoc : MarkdownDocument) = 
+            addMarkdown document section mdDoc.DefinedLinks mdDoc.Paragraphs
+
 type MarkdownPdf =
     static member Transform(text, outputPath : string) = Markdown.TransformPdf(text, outputPath)
     static member Transform(text, stream : Stream)     = Markdown.TransformPdf(text, stream)
     static member Write(doc, outputPath : string)      = Markdown.WritePdf(doc, outputPath)
     static member Write(doc, stream : Stream)          = Markdown.WritePdf(doc, stream)
+    static member AddMarkdown(doc, section, text : string)      = Markdown.AddMarkdown(doc, section, text)
+    static member AddMarkdown(doc, section, mdDoc : MarkdownDocument) = Markdown.AddMarkdown(doc, section, mdDoc)
