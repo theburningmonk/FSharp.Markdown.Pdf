@@ -98,34 +98,29 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="CSharpFormat">
-      <HintPath>..\packages\FSharp.Formatting.2.3.10-beta\lib\net40\CSharpFormat.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\FSharp.Formatting.2.4.0\lib\net40\CSharpFormat.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.CodeFormat">
-      <HintPath>..\packages\FSharp.Formatting.2.3.10-beta\lib\net40\FSharp.CodeFormat.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\FSharp.Formatting.2.4.0\lib\net40\FSharp.CodeFormat.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Compiler.Service">
       <HintPath>..\packages\FSharp.Compiler.Service.0.0.20\lib\net40\FSharp.Compiler.Service.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Literate">
-      <HintPath>..\packages\FSharp.Formatting.2.3.10-beta\lib\net40\FSharp.Literate.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\FSharp.Formatting.2.4.0\lib\net40\FSharp.Literate.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Markdown">
-      <HintPath>..\packages\FSharp.Formatting.2.3.10-beta\lib\net40\FSharp.Markdown.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\FSharp.Formatting.2.4.0\lib\net40\FSharp.Markdown.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.MetadataFormat">
-      <HintPath>..\packages\FSharp.Formatting.2.3.10-beta\lib\net40\FSharp.MetadataFormat.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\FSharp.Formatting.2.4.0\lib\net40\FSharp.MetadataFormat.dll</HintPath>
     </Reference>
-    <Reference Include="MigraDoc.DocumentObjectModel, Version=1.32.4334.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
-      <Private>True</Private>
+    <Reference Include="MigraDoc.DocumentObjectModel">
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\MigraDoc.DocumentObjectModel.dll</HintPath>
     </Reference>
-    <Reference Include="MigraDoc.Rendering, Version=1.32.4334.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
-      <Private>True</Private>
+    <Reference Include="MigraDoc.Rendering">
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\MigraDoc.Rendering.dll</HintPath>
     </Reference>
     <Reference Include="MigraDoc.RtfRendering">
       <HintPath>..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\MigraDoc.RtfRendering.dll</HintPath>
@@ -135,11 +130,11 @@
     <Reference Include="FSharp.Core, Version=4.3.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
     </Reference>
-    <Reference Include="PdfSharp, Version=1.32.3057.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
-      <Private>True</Private>
+    <Reference Include="PdfSharp">
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\PdfSharp.dll</HintPath>
     </Reference>
-    <Reference Include="PdfSharp.Charting, Version=1.32.3057.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
-      <Private>True</Private>
+    <Reference Include="PdfSharp.Charting">
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\PdfSharp.Charting.dll</HintPath>
     </Reference>
     <Reference Include="RazorEngine">
       <HintPath>..\packages\RazorEngine.3.4.1\lib\net45\RazorEngine.dll</HintPath>
