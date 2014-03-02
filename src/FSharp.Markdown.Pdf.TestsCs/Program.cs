@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FSharp.Markdown;
-using FSharp.Markdown.Pdf;
+
+using MigraDoc.DocumentObjectModel;
+using MigraDoc.Rendering;
+using PdfSharp.Pdf;
 
 namespace FSharp.Markdown.Pdf.TestsCs
 {
@@ -74,6 +72,23 @@ another list
                 MarkdownPdf.Write(parsed, fileStream);
                 Process.Start(@"C:\temp\markdown4.pdf");
             }
+
+            var doc = new Document();
+            doc.AddSection();
+            var section = doc.LastSection;
+            MarkdownPdf.AddMarkdown(doc, section, markdown);
+            var renderer = new PdfDocumentRenderer(false, PdfFontEmbedding.Always) {Document = doc};
+            renderer.RenderDocument();
+            renderer.PdfDocument.Save(@"C:\temp\markdown6.pdf");
+
+            doc = new Document();
+            doc.AddSection();
+            section = doc.LastSection;
+            MarkdownPdf.AddMarkdown(doc, section, parsed);
+            renderer = new PdfDocumentRenderer(false, PdfFontEmbedding.Always) {Document = doc};
+            renderer.RenderDocument();
+            renderer.PdfDocument.Save(@"C:\temp\markdown7.pdf");
+
 
             Console.WriteLine("All done... press any key to exit");
             Console.ReadKey();
