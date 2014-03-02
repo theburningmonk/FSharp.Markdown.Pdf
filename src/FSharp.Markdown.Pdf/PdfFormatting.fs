@@ -223,10 +223,6 @@ module PdfFormatting =
                                    | AlignLeft, column    
                                    | AlignDefault, column -> column.Format.Alignment <- ParagraphAlignment.Left)
 
-//            for col in table.Columns do
-//                printfn "col %s width set to %f" (col.ToString()) colWidth
-//                col.Width <- Unit.FromPoint colWidth
-
             table.Columns |> (fun column -> column.Width <- Unit.FromPoint colWidth)
          
             seq {
@@ -280,7 +276,6 @@ module PdfFormatting =
                     ListState           = None
                   }
     
-//        formatParagraphs ctx document.LastSection.AddParagraph paragraphs
         formatParagraphs ctx section.AddParagraph paragraphs
 
 [<AutoOpen>]
@@ -324,5 +319,5 @@ type MarkdownPdf =
     static member Transform(text, stream : Stream)     = Markdown.TransformPdf(text, stream)
     static member Write(doc, outputPath : string)      = Markdown.WritePdf(doc, outputPath)
     static member Write(doc, stream : Stream)          = Markdown.WritePdf(doc, stream)
-    static member AddMarkdown(doc, section, text : string)      = Markdown.AddMarkdown(doc, section, text)
-    static member AddMarkdown(doc, section, mdDoc : MarkdownDocument) = Markdown.AddMarkdown(doc, section, mdDoc)
+    static member AddMarkdown(pdfDoc, section, text : string)            = Markdown.AddMarkdown(pdfDoc, section, text)
+    static member AddMarkdown(pdfDoc, section, mdDoc : MarkdownDocument) = Markdown.AddMarkdown(pdfDoc, section, mdDoc)

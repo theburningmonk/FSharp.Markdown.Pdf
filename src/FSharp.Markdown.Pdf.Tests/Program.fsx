@@ -1,9 +1,9 @@
-﻿#r "bin/Debug/PdfSharp.dll"
-#r "bin/Debug/PdfSharp.Charting.dll"
-#r "bin/Debug/MigraDoc.DocumentObjectModel.dll"
-#r "bin/Debug/MigraDoc.Rendering.dll"
-#r "bin/Debug/FSharp.Markdown.dll"
-#r "bin/Debug/FSharp.Markdown.Pdf.dll"
+﻿#r "bin/PdfSharp.dll"
+#r "bin/PdfSharp.Charting.dll"
+#r "bin/MigraDoc.DocumentObjectModel.dll"
+#r "bin/MigraDoc.Rendering.dll"
+#r "bin/FSharp.Markdown.dll"
+#r "bin/FSharp.Markdown.Pdf.dll"
 
 open System.Diagnostics
 

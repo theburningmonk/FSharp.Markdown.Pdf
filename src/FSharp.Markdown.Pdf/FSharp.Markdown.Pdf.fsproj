@@ -19,19 +19,19 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>..\..\bin</OutputPath>
+    <OutputPath>bin</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>..\..\bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
+    <DocumentationFile>bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
-    <OutputPath>..\..\bin</OutputPath>
+    <OutputPath>bin</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>..\..\bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
+    <DocumentationFile>bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
@@ -41,20 +41,20 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>..\..\bin</OutputPath>
+    <OutputPath>bin</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>..\..\bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
+    <DocumentationFile>bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
-    <OutputPath>..\..\bin</OutputPath>
+    <OutputPath>bin</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>..\..\bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
+    <DocumentationFile>bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
@@ -62,20 +62,20 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>..\..\bin</OutputPath>
+    <OutputPath>bin</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>..\..\bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
+    <DocumentationFile>bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
-    <OutputPath>..\..\bin</OutputPath>
+    <OutputPath>bin</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>..\..\bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
+    <DocumentationFile>bin\FSharp.Markdown.Pdf.XML</DocumentationFile>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')" />
@@ -87,44 +87,38 @@
     <Compile Include="PdfFormatting.fs" />
     <None Include="packages.config" />
     <None Include="app.config" />
-    <Content Include="tips.js" />
-    <None Include="style.css" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="FSharp.CodeFormat">
-      <HintPath>..\..\..\..\packages\FSharp.Formatting.2.2.3\lib\net40\FSharp.CodeFormat.dll</HintPath>
+    <Reference Include="CSharpFormat">
+      <HintPath>..\packages\FSharp.Formatting.2.4.0\lib\net40\CSharpFormat.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FSharp.CompilerBinding">
-      <HintPath>..\..\..\..\packages\FSharp.Formatting.2.2.3\lib\net40\FSharp.CompilerBinding.dll</HintPath>
+    <Reference Include="FSharp.CodeFormat, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FSharp.Compiler.Service">
+      <HintPath>..\packages\FSharp.Compiler.Service.0.0.20\lib\net40\FSharp.Compiler.Service.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Literate">
-      <HintPath>..\..\..\..\packages\FSharp.Formatting.2.2.3\lib\net40\FSharp.Literate.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\FSharp.Formatting.2.4.0\lib\net40\FSharp.Literate.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Markdown">
-      <HintPath>..\..\..\..\packages\FSharp.Formatting.2.2.3\lib\net40\FSharp.Markdown.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\FSharp.Formatting.2.4.0\lib\net40\FSharp.Markdown.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.MetadataFormat">
-      <HintPath>..\..\..\..\packages\FSharp.Formatting.2.2.3\lib\net40\FSharp.MetadataFormat.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="FSharp.PowerPack.Metadata">
-      <HintPath>..\..\..\..\packages\FSharp.Formatting.2.2.3\lib\net40\FSharp.PowerPack.Metadata.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\FSharp.Formatting.2.4.0\lib\net40\FSharp.MetadataFormat.dll</HintPath>
     </Reference>
     <Reference Include="MigraDoc.DocumentObjectModel">
-      <HintPath>..\..\..\..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\MigraDoc.DocumentObjectModel.dll</HintPath>
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\MigraDoc.DocumentObjectModel.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MigraDoc.Rendering">
-      <HintPath>..\..\..\..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\MigraDoc.Rendering.dll</HintPath>
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\MigraDoc.Rendering.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MigraDoc.RtfRendering">
-      <HintPath>..\..\..\..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\MigraDoc.RtfRendering.dll</HintPath>
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\MigraDoc.RtfRendering.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="mscorlib" />
@@ -132,15 +126,15 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="PdfSharp">
-      <HintPath>..\..\..\..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\PdfSharp.dll</HintPath>
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\PdfSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="PdfSharp.Charting">
-      <HintPath>..\..\..\..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\PdfSharp.Charting.dll</HintPath>
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.1.32.4334.0\lib\net20\PdfSharp.Charting.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="RazorEngine">
-      <HintPath>..\..\..\..\packages\RazorEngine.3.3.0\lib\net40\RazorEngine.dll</HintPath>
+      <HintPath>..\packages\RazorEngine.3.3.0\lib\net40\RazorEngine.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -148,7 +142,7 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Web.Razor">
-      <HintPath>..\..\..\..\packages\Microsoft.AspNet.Razor.2.0.30506.0\lib\net40\System.Web.Razor.dll</HintPath>
+      <HintPath>..\packages\Microsoft.AspNet.Razor.2.0.30506.0\lib\net40\System.Web.Razor.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
